@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TradeQuote UK — Job Quote Calculator</title>
+<style>
+  :root{
+    --ink:#1b1f23; --paper:#ffffff; --panel:#f4f6f8; --line:#d7dce1;
+    --accent:#0b5fa5; --accent-dark:#084a82; --good:#1a7a3c; --muted:#5b6670;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; font-family:-apple-system,Segoe UI,Roboto,Arial,sans-serif;
+    background:var(--panel); color:var(--ink); line-height:1.4;
+  }
+  header{
+    background:var(--accent); color:#fff; padding:18px 20px;
+  }
+  header h1{margin:0; font-size:1.3rem;}
+  header p{margin:4px 0 0; font-size:0.85rem; opacity:0.9;}
+  main{
+    max-width:880px; margin:0 auto; padding:20px;
+    display:grid; grid-template-columns:1fr 1fr; gap:20px;
+  }
+  @media (max-width:720px){ main{grid-template-columns:1fr;} }
+  .card{
+    background:var(--paper); border:1px solid var(--line); border-radius:10px;
+    padding:18px 20px;
+  }
+  .card h2{margin:0 0 12px; font-size:1.05rem; color:var(--accent-dark);}
+  label{display:block; font-size:0.85rem; font-weight:600; margin:12px 0 4px;}
+  label:first-of-type{margin-top:0;}
+  input[type=number], input[type=text], select{
+    width:100%; padding:8px 10px; border:1px solid var(--line); border-radius:6px;
+    font-size:0.95rem; background:#fff; color:var(--ink);
+  }
+  .row{display:flex; gap:10px;}
+  .row > div{flex:1;}
+  .checkrow{display:flex; align-items:center; gap:8px; margin:14px 0 4px;}
+  .checkrow input{width:auto;}
+  .hint{font-size:0.75rem; color:var(--muted); margin-top:3px;}
+  .line{display:flex; justify-content:space-between; padding:6px 0; border-bottom:1px dashed var(--line); font-size:0.95rem;}
+  .line.total{font-weight:700; font-size:1.15rem; border-bottom:none; border-top:2px solid var(--ink); margin-top:6px; padding-top:10px; color:var(--good);}
+  .line span:last-child{font-variant-numeric:tabular-nums;}
+  textarea{
+    width:100%; min-height:220px; padding:10px; border:1px solid var(--line);
+    border-radius:6px; font-family:Consolas,Menlo,monospace; font-size:0.85rem;
+    background:#fbfcfd; resize:vertical;
+  }
+  button{
+    background:var(--accent); color:#fff; border:none; border-radius:6px;
+    padding:9px 16px; font-size:0.9rem; font-weight:600; cursor:pointer;
+  }
+  button:hover{background:var(--accent-dark);}
+  button.secondary{background:#fff; color:var(--accent); border:1px solid var(--accent);}
+  .btnrow{display:flex; gap:10px; margin-top:10px; flex-wrap:wrap;}
+  footer{
+    max-width:880px; margin:0 auto; padding:0 20px 30px; font-size:0.75rem; color:var(--muted);
+  }
+  .badge{
+    display:inline-block; background:#eef4fb; color:var(--accent-dark);
+    border:1px solid #cfe0f0; border-radius:12px; padding:2px 9px; font-size:0.72rem; margin-left:6px;
+  }
+  .copied{color:var(--good); font-size:0.8rem; margin-left:8px; display:none;}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>TradeQuote UK <span class="badge">free calculator</span></h1>
+  <p>Build an accurate, professional job quote in under a minute — labour, materials, callout, contingency and VAT handled for you.</p>
+</header>
+
+<main>
+  <section class="card" id="inputs">
+    <h2>Job details</h2>
+
+    <label for="trade">Trade / job type</label>
+    <select id="trade">
+      <option>General labour</option>
+      <option>Plumbing</option>
+      <option>Electrical</option>
+      <option>Decorating &amp; painting</option>
+      <option>Building &amp; carpentry</option>
+      <option>Gardening &amp; landscaping</option>
+      <option>Other</option>
+    </select>
+
+    <div class="row">
+      <div>
+        <label for="hours">Labour hours</label>
+        <input type="number" id="hours" min="0" step="0.25" value="6">
+      </div>
+      <div>
+        <label for="rate">Hourly rate (£)</label>
+        <input type="number" id="rate" min="0" step="0.5" value="35">
+        <div class="hint">Set to your own rate — figure is a blank starting point, not researched market data.</div>
+      </div>
+    </div>
+
+    <div class="row">
+      <div>
+        <label for="materials">Materials cost (£, your cost price)</label>
+        <input type="number" id="materials" min="0" step="0.5" value="80">
+      </div>
+      <div>
+        <label for="markup">Materials markup (%)</label>
+        <input type="number" id="markup" min="0" step="1" value="15">
+      </div>
+    </div>
+
+    <div class="row">
+      <div>
+        <label for="callout">Callout / travel fee (£)</label>
+        <input type="number" id="callout" min="0" step="1" value="15">
+      </div>
+      <div>
+        <label for="contingency">Contingency (%)</label>
+        <input type="number" id="contingency" min="0" step="1" value="5">
+        <div class="hint">Buffer for minor unforeseen extras on site.</div>
+      </div>
+    </div>
+
+    <div class="row">
+      <div>
+        <label for="discount">Discount (%)</label>
+        <input type="number" id="discount" min="0" max="100" step="1" value="0">
+      </div>
+      <div>
+        <label for="customer">Customer / job reference (optional)</label>
+        <input type="text" id="customer" placeholder="e.g. Mrs Patel, 14 Elm Road">
+      </div>
+    </div>
+
+    <div class="checkrow">
+      <input type="checkbox" id="vat">
+      <label for="vat" style="margin:0;">VAT registered (adds 20% standard rate)</label>
+    </div>
+    <div class="hint">Leave unticked if you are not VAT-registered — do not charge VAT you are not entitled to collect. Current UK standard rate is 20%; check gov.uk for current rate and your own VAT status before issuing a real quote.</div>
+  </section>
+
+  <section class="card" id="output">
+    <h2>Quote breakdown</h2>
+    <div id="lines"></div>
+
+    <div class="btnrow">
+      <button id="copyBtn" type="button">Copy quote text</button>
+      <button id="printBtn" type="button" class="secondary">Print</button>
+      <span class="copied" id="copiedMsg">Copied ✓</span>
+    </div>
+
+    <h2 style="margin-top:20px;">Customer-ready quote text</h2>
+    <textarea id="quoteText" readonly></textarea>
+  </section>
+</main>
+
+<footer>
+  TradeQuote UK is an independent calculator provided as-is for guidance only. It does not constitute accounting, tax or legal advice.
+  Always confirm current VAT rules and your own VAT-registration status at gov.uk before issuing a quote or invoice.
+  No data entered here is stored, transmitted or shared — all calculation happens locally in your browser.
+</footer>
+
+<script>
+(function(){
+  const $ = (id) => document.getElementById(id);
+  const fields = ["trade","hours","rate","materials","markup","callout","contingency","discount","customer","vat"];
+
+  function num(id){
+    const v = parseFloat($(id).value);
+    return isNaN(v) ? 0 : v;
+  }
+
+  function gbp(n){
+    return "£" + n.toFixed(2);
+  }
+
+  // Round every monetary line to pennies so displayed line items reconcile.
+  // Avoid floating point half-penny bias in amounts such as £33.285.
+  function money(n){
+    return Math.round((n + Math.abs(n) * Number.EPSILON) * 100) / 100;
+  }
+
+  function calculate(){
+    const hours = Math.max(0, num("hours"));
+    const rate = Math.max(0, num("rate"));
+    const materials = Math.max(0, num("materials"));
+    const markupPct = Math.max(0, num("markup"));
+    const callout = money(Math.max(0, num("callout")));
+    const contingencyPct = Math.max(0, num("contingency"));
+    const discountPct = Math.max(0, Math.min(100, num("discount")));
+    const vatOn = $("vat").checked;
+
+    const labourCost = money(hours * rate);
+    const materialsWithMarkup = money(materials * (1 + markupPct / 100));
+    const subtotalBeforeContingency = money(labourCost + materialsWithMarkup + callout);
+    const contingencyAmount = money(subtotalBeforeContingency * (contingencyPct / 100));
+    const subtotalAfterContingency = money(subtotalBeforeContingency + contingencyAmount);
+    const discountAmount = money(subtotalAfterContingency * (discountPct / 100));
+    const netTotal = money(subtotalAfterContingency - discountAmount);
+    const vatAmount = vatOn ? money(netTotal * 0.20) : 0;
+    const grandTotal = money(netTotal + vatAmount);
+
+    return {
+      hours, rate, labourCost, materials, markupPct, materialsWithMarkup,
+      callout, subtotalBeforeContingency, contingencyPct, contingencyAmount,
+      subtotalAfterContingency, discountPct, discountAmount, netTotal,
+      vatOn, vatAmount, grandTotal
+    };
+  }
+
+  function render(){
+    const r = calculate();
+    const trade = $("trade").value;
+    const customer = $("customer").value.trim();
+
+    $("lines").innerHTML = `
+      <div class="line"><span>Labour (${r.hours}h &times; ${gbp(r.rate)})</span><span>${gbp(r.labourCost)}</span></div>
+      <div class="line"><span>Materials (incl. ${r.markupPct}% markup)</span><span>${gbp(r.materialsWithMarkup)}</span></div>
+      <div class="line"><span>Callout / travel</span><span>${gbp(r.callout)}</span></div>
+      <div class="line"><span>Contingency (${r.contingencyPct}%)</span><span>${gbp(r.contingencyAmount)}</span></div>
+      ${r.discountAmount > 0 ? `<div class="line"><span>Discount (${r.discountPct}%)</span><span>-${gbp(r.discountAmount)}</span></div>` : ""}
+      <div class="line"><span>Net total</span><span>${gbp(r.netTotal)}</span></div>
+      <div class="line"><span>VAT ${r.vatOn ? "(20%)" : "(not applicable)"}</span><span>${gbp(r.vatAmount)}</span></div>
+      <div class="line total"><span>Total quote</span><span>${gbp(r.grandTotal)}</span></div>
+    `;
+
+    const today = new Date().toLocaleDateString("en-GB");
+    const text =
+`JOB QUOTE — ${trade}
+Date: ${today}
+${customer ? "For: " + customer + "\n" : ""}
+Labour: ${r.hours} hours @ ${gbp(r.rate)}/hr = ${gbp(r.labourCost)}
+Materials (incl. ${r.markupPct}% markup): ${gbp(r.materialsWithMarkup)}
+Callout / travel: ${gbp(r.callout)}
+Contingency (${r.contingencyPct}%): ${gbp(r.contingencyAmount)}
+${r.discountAmount > 0 ? "Discount (" + r.discountPct + "%): -" + gbp(r.discountAmount) + "\n" : ""}Net total: ${gbp(r.netTotal)}
+VAT: ${r.vatOn ? gbp(r.vatAmount) + " (20%)" : "Not applicable — not VAT registered"}
+---------------------------------
+TOTAL QUOTE: ${gbp(r.grandTotal)}
+
+This quote is valid for 30 days from the date above and excludes any work not described.
+Generated with TradeQuote UK.`;
+
+    $("quoteText").value = text;
+  }
+
+  fields.forEach(id => {
+    const el = $(id);
+    el.addEventListener("input", render);
+    el.addEventListener("change", render);
+  });
+
+  $("copyBtn").addEventListener("click", function(){
+    $("quoteText").select();
+    document.execCommand("copy");
+    const msg = $("copiedMsg");
+    msg.style.display = "inline";
+    setTimeout(() => { msg.style.display = "none"; }, 1500);
+  });
+
+  $("printBtn").addEventListener("click", function(){
+    window.print();
+  });
+
+  render();
+})();
+</script>
+
+</body>
+</html>
