@@ -137,7 +137,7 @@ footer a{color:var(--blue)}
 <section class="card">
   <div class="kicker">06 / Post-job reality</div><h2>Estimated vs actual</h2>
   <p class="small">Enter real completed-job expenditure. Leave fields blank if not known. No actual-profit claim is made from missing figures.</p>
-  <div id="actualInputs"></div><div id="actualOutput" class="pill" style="margin-top:10px"></div>
+  <div id="actualInputs"></div><div class="field" style="margin-top:10px"><label for="actualHours">Actual worker hours, completed job</label><input type="number" min="0" step=".1" id="actualHours" placeholder="Not yet recorded"></div><div id="actualOutput" class="pill" style="margin-top:10px"></div><div class="actions"><button id="archiveJob" type="button" class="secondary">Archive completed job for local comparison</button></div><div id="historyInsight" class="pill" style="margin-top:12px"></div><div id="historyRows" class="small" style="margin-top:8px"></div><p class="small">The learning summary uses only jobs saved in this project file. Fewer than three completed examples cannot support a recommendation. It never uploads personal or job data.</p>
 </section>
 <section class="card">
   <div class="kicker">07 / Documentation</div><h2>Customer quote draft</h2>
@@ -159,10 +159,11 @@ footer a{color:var(--blue)}
 <div id="clientPrint" aria-hidden="true"></div>
 <footer>Experimental tool provided as-is. No account, tracking code or remote pricing API. Material quantities, disposal volume, VAT and permissions are illustrative and must be verified. <a href="../privacy.html">Privacy information</a>.</footer>
 <script src="engine.js"></script>
+<script src="learning.js"></script>
 <script>
 (function(){
 "use strict";
-const E=window.TradeQuoteV2,$=id=>document.getElementById(id);
+const E=window.TradeQuoteV2,L=window.TradeQuoteLearning,$=id=>document.getElementById(id);
 let project=E.defaults(),result=null,validation=[];
 const commonLabels={
   internalLabourRate:"Actual cost per labour hour (£)",crewSize:"Crew size",hoursPerDay:"Hours per worker / day",
@@ -277,7 +278,7 @@ function refresh(){
  formFields("patioInputs",patioLabels,project.patio,"patio");
  formFields("commonInputs",commonLabels,project.common,"common");
  formFields("scenarioInputs",scenarioLabels,project.scenario,"scenario");
- checklist();variationForm();actuals();render();
+ checklist();variationForm();actuals();$("actualHours").value=project.actualHours??"";render();
 }
 function text(id,value){$(id).textContent=value;}
 function render(){
@@ -310,6 +311,9 @@ function render(){
     "No actual expenditure entered. Completed-job profit cannot be calculated.":
     "Recorded actual costs: "+E.gbp(result.actualTotal)+" · Difference against planned costs: "+E.gbp(result.actualVariance)+
     ". Verify all costs have been entered before treating this as final.";
+  const insight=L.insight(project.history||[],project.trade);
+  text("historyInsight",insight.message);
+  text("historyRows",(project.history||[]).slice(-6).reverse().map(h=>h.reference+": "+h.actualHours+"h actual / "+h.estimatedHours+"h estimated").join(" · "));
   const gateIssues=[];
   if(result.pending.length)gateIssues.push(result.pending.length+" checklist confirmations outstanding");
   if(result.trade==="fence"&&result.dimensions.totalLength===0)gateIssues.push("fence run length must be greater than zero");
@@ -383,6 +387,21 @@ function guardImport(o){
   for(const k of ["length","gates"])if(!Number.isFinite(Number(r[k]))||r[k]===""||Number(r[k])<0)throw Error("Invalid run "+k);
   return {name:r.name,length:r.length,gates:r.gates};
  });
+ if(o.actualHours!==undefined && o.actualHours!=="" && (!Number.isFinite(Number(o.actualHours)) || Number(o.actualHours)<0 || Number(o.actualHours)>100000))throw Error("Invalid actual hours");
+ valid.actualHours=o.actualHours??"";
+ if(o.history!==undefined){
+   if(!Array.isArray(o.history)||o.history.length>100)throw Error("Invalid job history");
+   valid.history=o.history.map(h=>{
+     if(!h||!["fence","patio"].includes(h.type)||typeof h.reference!=="string"||h.reference.length>90||
+       !Number.isFinite(Number(h.actualHours))||Number(h.actualHours)<=0||
+       !Number.isFinite(Number(h.estimatedHours))||Number(h.estimatedHours)<=0||
+       !Number.isFinite(Number(h.estimatedCost))||Number(h.estimatedCost)<=0||
+       !Number.isFinite(Number(h.actualCost))||Number(h.actualCost)<0)throw Error("Invalid history entry");
+     return {type:h.type,reference:h.reference,quantity:h.quantity,unit:h.unit,
+       estimatedHours:Number(h.estimatedHours),actualHours:Number(h.actualHours),
+       estimatedCost:Number(h.estimatedCost),actualCost:Number(h.actualCost),archivedAt:String(h.archivedAt||"").slice(0,35)};
+   });
+ }
  if(!Array.isArray(o.variations)||o.variations.length>200)throw Error("Invalid variations");
  valid.variations=o.variations.map(v=>{
   if(!v||typeof v.description!=="string"||v.description.length>180||
@@ -405,6 +424,16 @@ $("csv").addEventListener("click",()=>{
  download("tradequote-cost-sheet.csv",records.map(row=>row.map(cells).join(",")).join("\r\n"),"text/csv");
 });
 $("save").addEventListener("click",saveProject);
+$("actualHours").addEventListener("input",e=>{project.actualHours=e.target.value;render();});
+$("archiveJob").addEventListener("click",()=>{
+ try{
+  if(!result)throw Error("Correct estimate inputs before archiving.");
+  if((project.history||[]).length>=100)throw Error("History full; export and start a new project.");
+  if((project.history||[]).some(h=>h.reference===project.reference&&h.type===project.trade))throw Error("This job reference has already been archived. Use a new job reference.");
+  const record=L.archive(project,result,project.actualHours);
+  project.history.push(record);render();alert("Archived locally in this project. Save project JSON to retain the history.");
+ }catch(e){alert("Unable to archive: "+e.message);}
+});
 $("load").addEventListener("click",()=>$("import").click());
 $("import").addEventListener("change",async e=>{
  const file=e.target.files[0];if(!file)return;
