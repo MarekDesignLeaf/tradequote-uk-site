@@ -312,6 +312,8 @@ function render(){
     ". Verify all costs have been entered before treating this as final.";
   const gateIssues=[];
   if(result.pending.length)gateIssues.push(result.pending.length+" checklist confirmations outstanding");
+  if(result.trade==="fence"&&result.dimensions.totalLength===0)gateIssues.push("fence run length must be greater than zero");
+  if(result.trade==="patio"&&result.dimensions.area===0)gateIssues.push("patio area must be greater than zero");
   if(!project.common.priceSource || project.common.priceSource.includes("ILLUSTRATIVE"))gateIssues.push("real supplier source required");
   if(!project.common.priceChecked)gateIssues.push("supplier check date required");
   if(result.gross<=0)gateIssues.push("quote price is zero");
