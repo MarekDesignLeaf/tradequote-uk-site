@@ -216,6 +216,7 @@ function field(key,label,object,kind){
   const wrapper=element("div",undefined,"field"), lab=element("label",label); const id="fld-"+kind+"-"+key;
   lab.htmlFor=id;const input=document.createElement("input");input.id=id;
   if(typeof object[key]==="boolean"){input.type="checkbox";input.checked=object[key];input.addEventListener("change",()=>{object[key]=input.checked;render();});}
+  else if(kind==="actual"){input.type="number";input.min="0";input.step=".01";input.value=object[key]??"";input.addEventListener("input",()=>{object[key]=input.value;render();});}
   else if(key==="priceChecked"){input.type="date";input.value=object[key]||"";input.addEventListener("change",()=>{object[key]=input.value;render();});}
   else if(typeof object[key]==="string"){input.type="text";input.value=object[key]||"";input.maxLength=180;input.addEventListener("input",()=>{object[key]=input.value;render();});}
   else{input.type="number";input.min="0";input.step="any";input.value=object[key];input.addEventListener("input",()=>{object[key]=input.value;render();});}
@@ -283,8 +284,8 @@ function render(){
  const box=$("errors");box.textContent="";validation=[];result=null;
  try{
   result=E.build(project);
-  text("gross",E.gbp(result.gross));text("cost",E.gbp(result.cost));text("profit",E.gbp(result.profit));
-  text("margin",result.actualMargin+"%");text("labour",result.labourHours+"h");text("days",result.crewDays);
+  text("gross",E.gbp(result.revisedGross));text("cost",E.gbp(E.round(result.cost+result.approvedCost)));text("profit",E.gbp(result.revisedProfit));
+  text("margin",(result.revisedNet?E.round(100*result.revisedProfit/result.revisedNet):0)+"%");text("labour",result.labourHours+"h");text("days",result.crewDays);
   const dim=result.dimensions;
   text("quantities",result.trade==="fence"
     ? dim.totalLength+"m of fencing · "+dim.panels+" panels · "+dim.posts+" estimated posts · "+dim.gates+" gates · "+dim.bags+" postmix bags"
@@ -321,7 +322,7 @@ function render(){
     Date.parse(project.common.priceChecked)>Date.now()))gateIssues.push("supplier date is invalid or in the future");
   validation=gateIssues;
   const quote=E.clientDraft(project,result);
-  text("quote",quote);
+  $("quote").value=quote;
   text("clientPrint",quote);
   text("quoteGate",validation.length
     ?"DRAFT LOCKED: "+validation.join("; ")+". Confirm these before issuing."
@@ -332,7 +333,7 @@ function render(){
   const alert=element("div","CALCULATION BLOCKED: "+e.message,"alert");box.append(alert);
   for(const id of ["print","copy","csv"])$(id).disabled=true;
   for(const id of ["gross","cost","profit","margin","labour","days"])text(id,"—");
-  text("quote","Correct the calculation inputs first.");text("clientPrint","");
+  $("quote").value="Correct the calculation inputs first.";text("clientPrint","");
   text("quoteGate","Not ready for a customer.");text("stress","");text("quantities","");text("rows","");text("warnings","");
  }
 }
