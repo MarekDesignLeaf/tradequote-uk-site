@@ -1,7 +1,7 @@
 "use strict";
 const A=require("node:assert/strict");
 const E=require("./engine.js");
-const L=require("./learning.js");
+const L=require("./learning-reconciled.js");
 let passed=0;
 function check(name,fn){
   try{fn();console.log("PASS "+name);passed++}
@@ -24,6 +24,8 @@ check("Archive cost reconciliation",()=>{
  const j=job();const a=L.archive(j.project,j.result,19);
  A.equal(a.actualHours,19);A.equal(a.actualCost,600);
  A.equal(a.type,"fence");A.ok(a.estimatedCost>0);
+ A.equal(a.costBasis,"direct-expenditure-v2");
+ A.equal(a.estimatedCost,j.result.direct);
 });
 check("One or two jobs never imply a recommendation",()=>{
  const j=job(),a=L.archive(j.project,j.result,19);
@@ -36,6 +38,11 @@ check("Three jobs calculate actual/estimated median",()=>{
  const r=L.insight(h,"fence");
  A.equal(r.ready,true);A.equal(r.count,3);
  A.equal(r.medianLabourFactor,L.insight(h,"fence").medianLabourFactor);
+});
+check("Unknown cost basis is not used as compatible history",()=>{
+ const j=job(),a=L.archive(j.project,j.result,19);
+ const legacy={...a};delete legacy.costBasis;
+ A.equal(L.insight([legacy,legacy,legacy],"fence").ready,false);
 });
 check("Other trade is never silently pooled",()=>{
  const j=job(),a=L.archive(j.project,j.result,19);
