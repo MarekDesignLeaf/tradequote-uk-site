@@ -109,7 +109,8 @@ function build(input){
     add("labour","Install subbase",area*num(p.subbaseHoursPerM2,"Subbase productivity",0,40),"hours",d.common.internalLabourRate);
     add("labour","Lay paving",area*num(p.layHoursPerM2,"Paving productivity",0,40),"hours",d.common.internalLabourRate);
     add("labour","Joint and finish",area*num(p.jointHoursPerM2,"Finishing productivity",0,40),"hours",d.common.internalLabourRate);
-    risks.push("Skip count is volume-only: weight limits and permitted waste types can change requirements.",
+    risks.push("Paving units are not a verified laying plan; cuts, bond and irregular edges require checking.",
+       "Skip count is volume-only: weight limits and permitted waste types can change requirements.",
        "Confirm drainage fall, thresholds, damp-proof course clearance and planning requirements.",
        "Density and coverage defaults are illustrative and must be replaced by supplier data.");
     if(area===0)warns.push("Patio area is zero.");
@@ -170,15 +171,20 @@ function build(input){
   stressedCost=round(cost+approvedCost+stressExtra);
   stressedProfit=round(revisedNet-stressedCost);
   minReprice=round(stressedCost/(1-margin/100));
-  const actualEntries=Object.entries(d.actuals||{}).filter(([k,v])=>v!==""&&v!==null&&v!==undefined);
-  const validActual=actualEntries.map(([k,v])=>[k,num(v,"Actual "+k,0,10000000)]);
-  const actualTotal=validActual.length?round(validActual.reduce((s,[k,v])=>s+v,0)):null;
-  const actualVariance=actualTotal===null?null:round(actualTotal-(cost+approvedCost));
+  // Partial actual expenses are not evidence of a completed job.
+  // Only compare actual direct expenditure against modelled direct cost.
+  const actualCategories=["materials","labour","equipment","disposal","travel","other"];
+  const missingActual=actualCategories.filter(k=>!d.actuals||d.actuals[k]===""||d.actuals[k]===null||d.actuals[k]===undefined);
+  const actualEntries=actualCategories.filter(k=>!missingActual.includes(k)).map(k=>[k,num(d.actuals[k],"Actual "+k,0,10000000)]);
+  const actualRecorded=actualEntries.length;
+  const actualTotal=missingActual.length?null:round(actualEntries.reduce((s,[k,v])=>s+v,0));
+  const plannedDirect=round(direct+approvedCost);
+  const actualVariance=actualTotal===null?null:round(actualTotal-plannedDirect);
   if(variations.some(v=>!v.approved))warns.push("Unapproved variations are excluded from revised agreed revenue and cost.");
   return {trade:d.trade,rows,dimensions,risks,warns,labourHours,crewDays,subtotals,direct,
     overhead,contingency,cost,margin,basePrice,discountAmount,net,profit,actualMargin,vat,gross,
     stress,stressExtra,stressedCost,stressedProfit,minReprice,pending,variations,approvedCost,
-    approvedPrice,revisedProfit,revisedNet,revisedVat,revisedGross,actualTotal,actualVariance,vatCaution:"VAT is illustrative; only apply if correct for this supplier and job."};
+    approvedPrice,revisedProfit,revisedNet,revisedVat,revisedGross,actualTotal,actualVariance,actualRecorded,missingActual,plannedDirect,vatCaution:"VAT is illustrative; only apply if correct for this supplier and job."};
 }
 function clientDraft(project,result){
   const ref=String(project.reference||"Unassigned").replace(/[\r\n]/g," ").slice(0,100);
