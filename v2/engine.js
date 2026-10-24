@@ -35,7 +35,7 @@ function defaults(){
     scenario:{materialRisePercent:12,labourOverrunPercent:20,extraDisposal:80,extraDays:1},
     checks:{measurements:false,ground:false,utilities:false,access:false,waste:false,
       supplier:false,scope:false,regulations:false},
-    variations:[],actuals:{materials:"",labour:"",equipment:"",disposal:"",travel:"",other:""},
+    variations:[],actualHours:"",history:[],actuals:{materials:"",labour:"",equipment:"",disposal:"",travel:"",other:""},
   };
 }
 function build(input){
