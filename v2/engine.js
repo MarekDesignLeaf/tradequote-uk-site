@@ -85,7 +85,9 @@ function build(input){
     const area=l*w;
     const slabL=num(p.slabLengthMm,"Slab length",50,2000)/1000;
     const slabW=num(p.slabWidthMm,"Slab width",50,2000)/1000;
-    const count=ceil(area*(1+num(p.wastePercent,"Cut/waste allowance",0,80)/100)/(slabL*slabW));
+    const areaCount=ceil(area*(1+num(p.wastePercent,"Cut/waste allowance",0,80)/100)/(slabL*slabW));
+    // Basic rectangular grid bound, not a cutting plan or site verified layout.
+    const count=Math.max(areaCount,Math.min(ceil(l/slabL)*ceil(w/slabW),ceil(l/slabW)*ceil(w/slabL)));
     const mot=round(area*num(p.baseDepthMm,"MOT depth",0,700)/1000*num(p.baseDensity,"MOT density",1,3)*
       (1+num(p.baseAllowancePercent,"MOT allowance",0,80)/100));
     const sand=round(area*num(p.sandDepthMm,"Bedding depth",0,250)/1000*num(p.sandDensity,"Sand density",1,2.5));
