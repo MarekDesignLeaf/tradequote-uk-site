@@ -307,10 +307,13 @@ function render(){
   summaries.forEach(([l,v])=>{const row=element("div",undefined,"row");row.style.justifyContent="space-between";
     row.append(element("span",l),element("strong",v));stress.append(row);});
   const actual=$("actualOutput");
-  actual.textContent=result.actualTotal===null?
-    "No actual expenditure entered. Completed-job profit cannot be calculated.":
-    "Recorded actual costs: "+E.gbp(result.actualTotal)+" · Difference against planned costs: "+E.gbp(result.actualVariance)+
-    ". Verify all costs have been entered before treating this as final.";
+  actual.textContent=result.actualTotal!==null?
+    "Recorded direct costs: "+E.gbp(result.actualTotal)+" · Difference against modelled direct costs: "+E.gbp(result.actualVariance)+
+    ". Overhead and contingency are excluded from this comparison.":
+    result.actualRecorded?
+      "INCOMPLETE: "+result.actualRecorded+"/6 expense categories entered. Missing: "+result.missingActual.join(", ")+
+      ". No cost variance is available until every category is entered (zero where applicable).":
+      "No actual expenditure entered. Completed-job variance is unavailable.";
   const insight=L.insight(project.history||[],project.trade);
   text("historyInsight",insight.message);
   text("historyRows",(project.history||[]).slice(-6).reverse().map(h=>h.reference+": "+h.actualHours+"h actual / "+h.estimatedHours+"h estimated").join(" · "));
@@ -320,8 +323,8 @@ function render(){
   if(result.trade==="patio"&&result.dimensions.area===0)gateIssues.push("patio area must be greater than zero");
   if(!project.common.priceSource || project.common.priceSource.includes("ILLUSTRATIVE"))gateIssues.push("real supplier source required");
   if(!project.common.priceChecked)gateIssues.push("supplier check date required");
-  if(result.gross<=0)gateIssues.push("quote price is zero");
-  if(result.profit<0)gateIssues.push("negative modelled margin");
+  if(result.revisedGross<=0)gateIssues.push("quote price is zero");
+  if(result.revisedProfit<0)gateIssues.push("negative modelled margin");
   if(result.variations.some(v=>!v.approved))gateIssues.push("pending changes must be resolved for final quotation");
   const validDate=/^\d{4}-\d{2}-\d{2}$/.test(project.common.priceChecked);
   if(project.common.priceChecked && (!validDate || isNaN(Date.parse(project.common.priceChecked)) ||
@@ -399,7 +402,9 @@ function guardImport(o){
        !Number.isFinite(Number(h.actualCost))||Number(h.actualCost)<0)throw Error("Invalid history entry");
      return {type:h.type,reference:h.reference,quantity:h.quantity,unit:h.unit,
        estimatedHours:Number(h.estimatedHours),actualHours:Number(h.actualHours),
-       estimatedCost:Number(h.estimatedCost),actualCost:Number(h.actualCost),archivedAt:String(h.archivedAt||"").slice(0,35)};
+       estimatedCost:Number(h.estimatedCost),actualCost:Number(h.actualCost),
+        costBasis:h.costBasis==="direct-expenditure-v2"?"direct-expenditure-v2":"legacy-unknown",
+        archivedAt:String(h.archivedAt||"").slice(0,35)};
    });
  }
  if(!Array.isArray(o.variations)||o.variations.length>200)throw Error("Invalid variations");
