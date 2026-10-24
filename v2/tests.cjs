@@ -32,7 +32,7 @@ test("Whole bags purchased even with fractional per-post input",()=>{
 });
 test("Patio area, slabs and skips",()=>{
  const x=p();x.trade="patio";const q=E.build(x);
- assert.equal(q.dimensions.area,20);assert.equal(q.dimensions.slabs,62);
+ assert.equal(q.dimensions.area,20);assert.equal(q.dimensions.slabs,63);
  assert.equal(q.dimensions.skips,2);
 });
 test("Patio area zero raises scope warning",()=>{
@@ -91,9 +91,27 @@ test("Preflight starts unchecked",()=>{
 test("Actual costs absent remain unknown",()=>{
  const q=E.build(p());assert.equal(q.actualTotal,null);
 });
-test("Partial actual costs are not fabricated",()=>{
+test("Partial actual costs never imply a completed variance",()=>{
  const x=p();x.actuals.materials="200";x.actuals.labour="150";
- assert.equal(E.build(x).actualTotal,350);
+ const q=E.build(x);
+ assert.equal(q.actualTotal,null);assert.equal(q.actualVariance,null);
+ assert.equal(q.actualRecorded,2);assert.equal(q.missingActual.length,4);
+});
+test("Complete actual expenditure compares against direct cost",()=>{
+ const x=p();x.actuals={materials:200,labour:150,equipment:0,disposal:50,travel:25,other:0};
+ const q=E.build(x);
+ assert.equal(q.actualTotal,425);
+ assert.equal(q.actualVariance,E.round(425-q.direct));
+});
+test("Approved variation direct costs included in variance basis",()=>{
+ const x=p();x.variations=[{description:"approved",cost:100,price:200,approved:true}];
+ x.actuals={materials:200,labour:150,equipment:0,disposal:50,travel:25,other:0};
+ const q=E.build(x);
+ assert.equal(q.plannedDirect,E.round(q.direct+100));
+});
+test("Area-only takeoff never drops below rectangular grid",()=>{
+ const x=p();x.trade="patio";x.patio.wastePercent=0;
+ assert.equal(E.build(x).dimensions.slabs,63);
 });
 test("Customer quote excludes private margin and unit costs",()=>{
  const x=p();const s=E.clientDraft(x,E.build(x));
