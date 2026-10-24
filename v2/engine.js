@@ -35,7 +35,7 @@ function defaults(){
     scenario:{materialRisePercent:12,labourOverrunPercent:20,extraDisposal:80,extraDays:1},
     checks:{measurements:false,ground:false,utilities:false,access:false,waste:false,
       supplier:false,scope:false,regulations:false},
-    variations:[],actuals:{},
+    variations:[],actuals:{materials:"",labour:"",equipment:"",disposal:"",travel:"",other:""},
   };
 }
 function build(input){
@@ -161,6 +161,9 @@ function build(input){
   const approvedCost=round(approved.reduce((s,v)=>s+v.cost,0));
   const approvedPrice=round(approved.reduce((s,v)=>s+v.price,0));
   const revisedProfit=round(profit+approvedPrice-approvedCost);
+  const revisedNet=round(net+approvedPrice);
+  const revisedVat=c.chargeVat?round(revisedNet*0.2):0;
+  const revisedGross=round(revisedNet+revisedVat);
   const actualEntries=Object.entries(d.actuals||{}).filter(([k,v])=>v!==""&&v!==null&&v!==undefined);
   const validActual=actualEntries.map(([k,v])=>[k,num(v,"Actual "+k,0,10000000)]);
   const actualTotal=validActual.length?round(validActual.reduce((s,[k,v])=>s+v,0)):null;
@@ -169,7 +172,7 @@ function build(input){
   return {trade:d.trade,rows,dimensions,risks,warns,labourHours,crewDays,subtotals,direct,
     overhead,contingency,cost,margin,basePrice,discountAmount,net,profit,actualMargin,vat,gross,
     stress,stressExtra,stressedCost,stressedProfit,minReprice,pending,variations,approvedCost,
-    approvedPrice,revisedProfit,actualTotal,actualVariance,vatCaution:"VAT is illustrative; only apply if correct for this supplier and job."};
+    approvedPrice,revisedProfit,revisedNet,revisedVat,revisedGross,actualTotal,actualVariance,vatCaution:"VAT is illustrative; only apply if correct for this supplier and job."};
 }
 function clientDraft(project,result){
   const ref=String(project.reference||"Unassigned").replace(/[\r\n]/g," ").slice(0,100);
@@ -182,10 +185,11 @@ function clientDraft(project,result){
     "Work: "+scope,
     "Description: "+String(project.description||"Subject to final written specification").replace(/[\r\n]/g," ").slice(0,300),
     "",
-    "Price before VAT: "+gbp(result.net),
-    "VAT (if applicable): "+gbp(result.vat),
-    "Total proposed price: "+gbp(result.gross),
+    "Price before VAT: "+gbp(result.revisedNet),
+    "VAT (if applicable): "+gbp(result.revisedVat),
+    "Total proposed price: "+gbp(result.revisedGross),
     "",
+    "Approved variations: "+(result.variations.filter(v=>v.approved).map(v=>v.description+" ("+gbp(v.price)+")").join("; ")||"None"),
     "Excludes unagreed site changes, buried services, planning/permissions and unforeseen ground conditions.",
     "Materials, scope, boundaries, access and VAT treatment must be verified before issue.",
     "Variations require written agreement before work.",
