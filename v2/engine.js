@@ -145,9 +145,9 @@ function build(input){
     disposal:num(scenario.extraDisposal,"Disposal stress",0,1000000),
     equipment:round(num(scenario.extraDays,"Equipment days stress",0,365)*num(c.equipmentDayCost,"Equipment hire rate"))};
   const stressExtra=round(Object.values(stress).reduce((s,v)=>s+v,0));
-  const stressedCost=round(cost+stressExtra);
-  const stressedProfit=round(net-stressedCost);
-  const minReprice=round(stressedCost/(1-margin/100));
+  let stressedCost=round(cost+stressExtra);
+  let stressedProfit=round(net-stressedCost);
+  let minReprice=round(stressedCost/(1-margin/100));
   const allowed=new Set(["measurements","ground","utilities","access","waste","supplier","scope","regulations"]);
   const pending=Array.from(allowed).filter(k=>!d.checks || d.checks[k]!==true);
   if(pending.length)warns.push(pending.length+" pre-quote checklist items await confirmation.");
@@ -164,6 +164,10 @@ function build(input){
   const revisedNet=round(net+approvedPrice);
   const revisedVat=c.chargeVat?round(revisedNet*0.2):0;
   const revisedGross=round(revisedNet+revisedVat);
+  // Scenario includes approved extra work and its agreed selling price.
+  stressedCost=round(cost+approvedCost+stressExtra);
+  stressedProfit=round(revisedNet-stressedCost);
+  minReprice=round(stressedCost/(1-margin/100));
   const actualEntries=Object.entries(d.actuals||{}).filter(([k,v])=>v!==""&&v!==null&&v!==undefined);
   const validActual=actualEntries.map(([k,v])=>[k,num(v,"Actual "+k,0,10000000)]);
   const actualTotal=validActual.length?round(validActual.reduce((s,[k,v])=>s+v,0)):null;
